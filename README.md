@@ -12,4 +12,6 @@ A pixel-style phone app for tracking your level and gear bonuses in the card gam
 
 ## How to use it
 
-Open `index.html` in any browser. It's one file with nothing to install.
+Play it on your phone: https://outcomesmadeeasy.github.io/munchkin-tracker/
+
+Or open `index.html` in any browser. It's one file with nothing to install.

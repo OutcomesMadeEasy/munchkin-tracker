@@ -1,5 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1426">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Munchkin">
+<meta name="description" content="Pixel-style phone tracker for your Munchkin level, gear bonuses, and extra items.">
 <title>Munchkin Power Tracker</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
 <style>
@@ -20,7 +28,9 @@
 }
 * { box-sizing: border-box; }
 html, body { background: var(--bg); }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body {
+  margin: 0;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 22px;
@@ -142,6 +152,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .level.win .big { animation: none; } .btn:active, .tbtn:active { transform: none; } }
 </style>
+</head>
+<body>
 
 <header class="power">
   <div class="power-inner">
@@ -342,3 +354,5 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
   render();
 })();
 </script>
+</body>
+</html>
