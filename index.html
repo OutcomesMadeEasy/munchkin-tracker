@@ -1,0 +1,344 @@
+<title>Munchkin Power Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<style>
+/* Layout: one phone column. Sticky power bar on top, level card, gear slots, extra items. */
+:root {
+  --bg: #1b1426;        /* dungeon night */
+  --panel: #2a2040;     /* stone slab */
+  --panel-2: #362a52;
+  --ink: #f4ead2;       /* parchment text */
+  --dim: #a99cc4;
+  --gold: #ffcc33;      /* treasure */
+  --red: #e8473c;       /* monster / minus */
+  --green: #5fd068;     /* plus */
+  --edge: #0d0915;      /* pixel outline */
+  --font-pixel: "Press Start 2P", ui-monospace, monospace;
+  --font-body: "VT323", ui-monospace, "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 22px;
+  line-height: 1.15;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 32px;
+  background-image:
+    linear-gradient(var(--bg) 2px, transparent 2px),
+    linear-gradient(90deg, var(--bg) 2px, transparent 2px);
+  background-size: 24px 24px;
+  background-color: #211934;
+  -webkit-tap-highlight-color: transparent;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg);
+}
+.wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+/* Pixel box: chunky stepped border */
+.px {
+  background: var(--panel);
+  box-shadow:
+    0 -4px 0 0 var(--edge), 0 4px 0 0 var(--edge),
+    -4px 0 0 0 var(--edge), 4px 0 0 0 var(--edge),
+    inset 0 4px 0 0 rgba(255,255,255,.07), inset 0 -4px 0 0 rgba(0,0,0,.25);
+}
+
+header.power {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding: 14px max(16px, env(safe-area-inset-left, 0px)) 14px;
+  background: var(--bg);
+  border-bottom: 4px solid var(--edge);
+}
+.power-inner { max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+.brand { font-family: var(--font-pixel); font-size: 10px; color: var(--gold); letter-spacing: 1px; line-height: 1.6; flex: 1; min-width: 0; }
+.brand small { display: block; color: var(--dim); font-size: 8px; }
+.strength { text-align: right; }
+.strength .lbl { font-family: var(--font-pixel); font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+.strength .num { font-family: var(--font-pixel); font-size: 34px; color: var(--gold); text-shadow: 3px 3px 0 var(--edge); font-variant-numeric: tabular-nums; }
+.math { font-size: 18px; color: var(--dim); text-align: right; }
+
+h2 {
+  font-family: var(--font-pixel); font-size: 11px; letter-spacing: 1px; color: var(--gold);
+  margin: 6px 0 -4px; text-shadow: 2px 2px 0 var(--edge);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+h2 span { color: var(--dim); font-size: 9px; }
+
+/* Level card */
+.level { padding: 16px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
+.level .big {
+  text-align: center; font-family: var(--font-pixel); font-size: 56px; color: var(--ink);
+  text-shadow: 4px 4px 0 var(--edge); font-variant-numeric: tabular-nums;
+}
+.level .cap { text-align: center; font-family: var(--font-pixel); font-size: 8px; color: var(--dim); margin-top: 8px; letter-spacing: 1px; }
+.level.win .big { color: var(--gold); animation: blink .6s steps(2) infinite; }
+.level.win .cap { color: var(--gold); }
+@keyframes blink { 50% { opacity: .55; } }
+.pips { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.pips i { height: 10px; background: var(--edge); }
+.pips i.on { background: var(--gold); }
+
+/* Buttons */
+button { font: inherit; color: inherit; cursor: pointer; border: 0; }
+.btn {
+  width: 56px; height: 56px; display: grid; place-items: center;
+  background: var(--panel-2);
+  box-shadow: 0 -3px 0 var(--edge), 0 3px 0 var(--edge), -3px 0 0 var(--edge), 3px 0 0 var(--edge), inset 0 -5px 0 rgba(0,0,0,.35);
+  touch-action: manipulation;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 -3px 0 var(--edge), 0 3px 0 var(--edge), -3px 0 0 var(--edge), 3px 0 0 var(--edge), inset 0 3px 0 rgba(0,0,0,.35); }
+.btn:focus-visible, .tbtn:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.btn.up { background: #2f5a35; } .btn.down { background: #6b2a2a; }
+.btn.lg { width: 68px; height: 68px; }
+.btn.sm { width: 44px; height: 44px; }
+.btn canvas { image-rendering: pixelated; }
+
+/* Gear rows */
+.slots { display: flex; flex-direction: column; gap: 14px; }
+.slot { padding: 10px 12px; display: grid; grid-template-columns: 40px 1fr auto 52px auto; align-items: center; gap: 10px; }
+.slot .ico { width: 40px; height: 40px; image-rendering: pixelated; }
+.slot .name { min-width: 0; }
+.slot .name b { display: block; font-family: var(--font-pixel); font-size: 10px; font-weight: 400; line-height: 1.5; }
+.slot .name small { color: var(--dim); font-size: 18px; display: block; }
+.slot .val {
+  text-align: center; font-family: var(--font-pixel); font-size: 18px; font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+.slot .val.pos { color: var(--green); } .slot .val.neg { color: var(--red); }
+.slot input.name-in {
+  width: 100%; min-width: 0; background: var(--edge); color: var(--ink); border: 0;
+  font-family: var(--font-body); font-size: 22px; padding: 6px 8px;
+}
+.slot.extra { grid-template-columns: 1fr auto 52px auto; }
+.slot.extra .del { grid-column: 1 / -1; justify-self: start; }
+
+.tbtn {
+  font-family: var(--font-pixel); font-size: 10px; letter-spacing: 1px; padding: 14px 14px;
+  background: var(--panel-2); color: var(--ink);
+  box-shadow: 0 -3px 0 var(--edge), 0 3px 0 var(--edge), -3px 0 0 var(--edge), 3px 0 0 var(--edge), inset 0 -4px 0 rgba(0,0,0,.35);
+}
+.tbtn:active { transform: translateY(3px); }
+.tbtn.gold { background: var(--gold); color: var(--edge); }
+.tbtn.ghost { background: transparent; box-shadow: none; color: var(--dim); padding: 6px 0; font-size: 8px; }
+.tbtn.danger { background: var(--red); color: var(--ink); }
+.row { display: flex; gap: 14px; flex-wrap: wrap; }
+.row .tbtn { flex: 1; }
+.empty { color: var(--dim); font-size: 20px; padding: 4px 2px; }
+.foot { color: var(--dim); font-size: 18px; text-align: center; }
+
+@media (max-width: 360px) {
+  .slot { grid-template-columns: 32px 1fr auto 44px auto; gap: 8px; }
+  .slot .ico { width: 32px; height: 32px; }
+  .btn.sm { width: 40px; height: 40px; }
+  .level .big { font-size: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .level.win .big { animation: none; } .btn:active, .tbtn:active { transform: none; } }
+</style>
+
+<header class="power">
+  <div class="power-inner">
+    <div class="brand">MUNCHKIN<small>POWER TRACKER</small></div>
+    <div class="strength">
+      <div class="lbl">COMBAT</div>
+      <div class="num" id="total">1</div>
+      <div class="math" id="math">Lvl 1 + Gear 0</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <h2>LEVEL <span>FIRST TO 10 WINS</span></h2>
+  <section class="level px" id="levelCard">
+    <button class="btn down lg" id="lvlDown" aria-label="Level down"></button>
+    <div>
+      <div class="big" id="lvl">1</div>
+      <div class="cap" id="lvlCap">KEEP KICKING DOORS</div>
+    </div>
+    <button class="btn up lg" id="lvlUp" aria-label="Level up"></button>
+    <div class="pips" id="pips" aria-hidden="true"></div>
+  </section>
+
+  <h2>GEAR <span id="gearTotal">+0</span></h2>
+  <section class="slots" id="slots"></section>
+
+  <h2>EXTRA STUFF <span id="extraTotal">+0</span></h2>
+  <section class="slots" id="extras"></section>
+  <div class="row">
+    <button class="tbtn gold" id="addExtra">+ ADD ITEM</button>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <button class="tbtn danger" id="reset">NEW GAME</button>
+  </div>
+  <p class="foot">Combat strength = your level + every bonus. Saves on this device.</p>
+</main>
+
+<script>
+(() => {
+  // ---------- Pixel sprites (8x8). Letters map to palette colors. ----------
+  const PAL = { k:"#0d0915", g:"#ffcc33", s:"#c9c4d6", d:"#7c7590", r:"#e8473c", b:"#8a5a2b", w:"#f4ead2", n:"#5fd068", p:"#9b6be0" };
+  const SPRITES = {
+    head:  ["..kkkk..",".kssssk.","kssssssk","ksdkkdsk","ksk..ksk","ksk..ksk",".kk..kk.","........"],
+    armor: ["kk....kk","kskkkksk","ksssssk.","kssgsssk","kssssssk",".kssssk.",".kssssk.","..kkkk.."],
+    foot:  ["..kkk...","..kbk...","..kbk...","..kbk...","..kbbkk.","..kbbbbk",".kbbbbbk",".kkkkkkk"],
+    hand:  [".......k","......ks",".....ks.","....ks..","k..ks...",".kks....","..kk....",".k.kk..."],
+    shield:["kkkkkkk.","krrgrrk.","krrgrrk.","kgggggk.","krrgrrk.",".krgrk..","..kgk...","...k...."],
+    big:   ["...kk...","..kppk..",".kpppk..","kpppppk.","kpgppppk","kpppppk.",".kpppk..","..kkk..."],
+    up:    ["...kk...","..kwwk..",".kwwwwk.","kwwwwwwk","kkkwwkkk","..kwwk..","..kwwk..","..kkkk.."],
+    down:  ["..kkkk..","..kwwk..","..kwwk..","kkkwwkkk","kwwwwwwk",".kwwwwk.","..kwwk..","...kk..."],
+    plus:  ["........","...kk...","..kwwk..",".kkwwkk.",".kwwwwk.",".kkwwkk.","..kwwk..","...kk..."],
+    minus: ["........","........","........",".kkkkkk.",".kwwwwk.",".kkkkkk.","........","........"],
+    x:     ["........",".kk..kk.",".kwkkwk.","..kwwk..","..kwwk..",".kwkkwk.",".kk..kk.","........"],
+  };
+  function sprite(name, px) {
+    const c = document.createElement("canvas");
+    c.width = 8; c.height = 8;
+    c.style.width = c.style.height = px + "px";
+    const ctx = c.getContext("2d");
+    SPRITES[name].forEach((row, y) => [...row].forEach((ch, x) => {
+      if (PAL[ch]) { ctx.fillStyle = PAL[ch]; ctx.fillRect(x, y, 1, 1); }
+    }));
+    return c;
+  }
+
+  // ---------- Gear slots from the Munchkin rules ----------
+  const SLOTS = [
+    { id:"head",  name:"HEADGEAR",   note:"1 helmet or hat",       icon:"head" },
+    { id:"armor", name:"ARMOR",      note:"1 suit of armor",       icon:"armor" },
+    { id:"foot",  name:"FOOTGEAR",   note:"1 pair of boots",       icon:"foot" },
+    { id:"left",  name:"LEFT HAND",  note:"1-hand weapon/shield",  icon:"shield" },
+    { id:"right", name:"RIGHT HAND", note:"1-hand weapon/shield",  icon:"hand" },
+    { id:"big",   name:"BIG ITEM",   note:"Only 1 unless you're a Dwarf", icon:"big" },
+  ];
+
+  const KEY = "munchkin-tracker-v1";
+  const fresh = () => ({ level: 1, gear: Object.fromEntries(SLOTS.map(s => [s.id, 0])), extras: [], nextId: 1 });
+  let state = fresh();
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && typeof saved.level === "number") state = Object.assign(fresh(), saved, { gear: Object.assign(fresh().gear, saved.gear) });
+  } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => (n > 0 ? "+" : "") + n;
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+
+  function stepper(val, onChange) {
+    const down = document.createElement("button");
+    down.className = "btn sm down"; down.setAttribute("aria-label", "Minus 1");
+    down.appendChild(sprite("minus", 24));
+    const up = document.createElement("button");
+    up.className = "btn sm up"; up.setAttribute("aria-label", "Plus 1");
+    up.appendChild(sprite("plus", 24));
+    const out = document.createElement("div");
+    out.className = "val";
+    down.onclick = () => onChange(-1);
+    up.onclick = () => onChange(1);
+    return { down, up, out };
+  }
+
+  // Build gear rows once
+  const gearOut = {};
+  SLOTS.forEach(s => {
+    const row = document.createElement("div");
+    row.className = "slot px";
+    const ico = sprite(s.icon, 40); ico.className = "ico";
+    const name = document.createElement("div");
+    name.className = "name";
+    name.innerHTML = `<b>${s.name}</b><small>${s.note}</small>`;
+    const st = stepper(state.gear[s.id], d => { state.gear[s.id] = clamp(state.gear[s.id] + d, -20, 30); render(); });
+    gearOut[s.id] = st.out;
+    row.append(ico, name, st.down, st.out, st.up);
+    $("slots").appendChild(row);
+  });
+
+  function renderExtras() {
+    const box = $("extras");
+    box.innerHTML = "";
+    if (!state.extras.length) {
+      const p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "No extras yet. Add one for a one-shot potion, a race or class bonus, a curse, or that card you \"found\".";
+      box.appendChild(p);
+      return;
+    }
+    state.extras.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "slot extra px";
+      const inp = document.createElement("input");
+      inp.className = "name-in"; inp.id = "extra-" + item.id;
+      inp.value = item.name; inp.setAttribute("aria-label", "Item name");
+      inp.oninput = () => { item.name = inp.value; save(); };
+      const st = stepper(item.bonus, d => { item.bonus = clamp(item.bonus + d, -20, 30); render(); });
+      st.out.textContent = fmt(item.bonus);
+      st.out.classList.toggle("pos", item.bonus > 0);
+      st.out.classList.toggle("neg", item.bonus < 0);
+      const del = document.createElement("button");
+      del.className = "tbtn ghost del"; del.textContent = "REMOVE";
+      del.onclick = () => { state.extras = state.extras.filter(x => x !== item); renderExtras(); render(); };
+      row.append(inp, st.down, st.out, st.up, del);
+      box.appendChild(row);
+    });
+  }
+
+  // Level controls
+  $("lvlDown").appendChild(sprite("down", 32));
+  $("lvlUp").appendChild(sprite("up", 32));
+  $("lvlDown").onclick = () => { state.level = clamp(state.level - 1, 1, 10); render(); };
+  $("lvlUp").onclick = () => { state.level = clamp(state.level + 1, 1, 10); render(); };
+  for (let i = 0; i < 10; i++) $("pips").appendChild(document.createElement("i"));
+
+  $("addExtra").onclick = () => {
+    const id = state.nextId++;
+    state.extras.push({ id, name: "Extra item " + id, bonus: 1 });
+    renderExtras(); render();
+    const el = $("extra-" + id); if (el) { el.focus(); el.select(); }
+  };
+
+  // Two-tap reset (no confirm dialogs in the viewer)
+  let armed = null;
+  $("reset").onclick = () => {
+    const b = $("reset");
+    if (!armed) {
+      b.textContent = "TAP AGAIN TO RESET";
+      armed = setTimeout(() => { armed = null; b.textContent = "NEW GAME"; }, 3000);
+      return;
+    }
+    clearTimeout(armed); armed = null; b.textContent = "NEW GAME";
+    state = fresh(); renderExtras(); render();
+  };
+
+  function render() {
+    const gear = SLOTS.reduce((a, s) => a + state.gear[s.id], 0);
+    const extra = state.extras.reduce((a, x) => a + x.bonus, 0);
+    const bonus = gear + extra;
+    $("lvl").textContent = state.level;
+    $("total").textContent = state.level + bonus;
+    $("math").textContent = `Lvl ${state.level} + Bonus ${bonus}`;
+    $("gearTotal").textContent = fmt(gear);
+    $("extraTotal").textContent = fmt(extra);
+    SLOTS.forEach(s => {
+      const v = state.gear[s.id], o = gearOut[s.id];
+      o.textContent = fmt(v);
+      o.classList.toggle("pos", v > 0); o.classList.toggle("neg", v < 0);
+    });
+    [...$("pips").children].forEach((p, i) => p.classList.toggle("on", i < state.level));
+    const win = state.level >= 10;
+    $("levelCard").classList.toggle("win", win);
+    $("lvlCap").textContent = win ? "YOU WIN!" : state.level === 9 ? "ONE MORE LEVEL" : "KEEP KICKING DOORS";
+    save();
+  }
+
+  renderExtras();
+  render();
+})();
+</script>
