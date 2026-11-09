@@ -243,6 +243,11 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
   const $ = id => document.getElementById(id);
   const fmt = n => (n > 0 ? "+" : "") + n;
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  function paintVal(out, v) {
+    out.textContent = fmt(v);
+    out.classList.toggle("pos", v > 0);
+    out.classList.toggle("neg", v < 0);
+  }
 
   function stepper(val, onChange) {
     const down = document.createElement("button");
@@ -290,10 +295,12 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
       inp.className = "name-in"; inp.id = "extra-" + item.id;
       inp.value = item.name; inp.setAttribute("aria-label", "Item name");
       inp.oninput = () => { item.name = inp.value; save(); };
-      const st = stepper(item.bonus, d => { item.bonus = clamp(item.bonus + d, -20, 30); render(); });
-      st.out.textContent = fmt(item.bonus);
-      st.out.classList.toggle("pos", item.bonus > 0);
-      st.out.classList.toggle("neg", item.bonus < 0);
+      const st = stepper(item.bonus, d => {
+        item.bonus = clamp(item.bonus + d, -20, 30);
+        paintVal(st.out, item.bonus); // render() only refreshes the gear rows, so update this row's number here
+        render();
+      });
+      paintVal(st.out, item.bonus);
       const del = document.createElement("button");
       del.className = "tbtn ghost del"; del.textContent = "REMOVE";
       del.onclick = () => { state.extras = state.extras.filter(x => x !== item); renderExtras(); render(); };
@@ -338,11 +345,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
     $("math").textContent = `Lvl ${state.level} + Bonus ${bonus}`;
     $("gearTotal").textContent = fmt(gear);
     $("extraTotal").textContent = fmt(extra);
-    SLOTS.forEach(s => {
-      const v = state.gear[s.id], o = gearOut[s.id];
-      o.textContent = fmt(v);
-      o.classList.toggle("pos", v > 0); o.classList.toggle("neg", v < 0);
-    });
+    SLOTS.forEach(s => paintVal(gearOut[s.id], state.gear[s.id]));
     [...$("pips").children].forEach((p, i) => p.classList.toggle("on", i < state.level));
     const win = state.level >= 10;
     $("levelCard").classList.toggle("win", win);
